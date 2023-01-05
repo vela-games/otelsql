@@ -117,6 +117,9 @@ type SpanOptions struct {
 
 	// OmitConnectorConnect if set to true will suppress sql.connector.connect spans
 	OmitConnectorConnect bool
+
+	// OmitConnExec if set to true will suppress sql.conn.exec spans
+	OmitConnExec bool
 }
 
 type defaultSpanNameFormatter struct{}

@@ -94,10 +94,13 @@ func (c *otConn) ExecContext(ctx context.Context, query string, args []driver.Na
 	}()
 
 	var span trace.Span
-	ctx, span = createSpan(ctx, c.cfg, method, true, query, args)
-	defer span.End()
+	queryCtx := ctx
+	if !c.cfg.SpanOptions.OmitConnExec {
+		queryCtx, span = createSpan(ctx, c.cfg, method, true, query, args)
+		defer span.End()
+	}
 
-	res, err = execer.ExecContext(ctx, c.cfg.SQLCommenter.withComment(ctx, query), args)
+	res, err = execer.ExecContext(queryCtx, c.cfg.SQLCommenter.withComment(queryCtx, query), args)
 	if err != nil {
 		recordSpanError(span, c.cfg.SpanOptions, err)
 		return nil, err

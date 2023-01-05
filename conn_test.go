@@ -218,79 +218,90 @@ func TestOtConn_ExecContext(t *testing.T) {
 	args := []driver.NamedValue{{Value: "foo"}}
 	expectedAttrs := []attribute.KeyValue{semconv.DBStatementKey.String(query)}
 
-	testCases := []struct {
-		name             string
-		error            bool
-		noParentSpan     bool
-		disableQuery     bool
-		attrs            []attribute.KeyValue
-		attributesGetter AttributesGetter
-	}{
-		{
-			name:  "no error",
-			attrs: expectedAttrs,
-		},
-		{
-			name:         "no query db.statement",
-			disableQuery: true,
-		},
-		{
-			name:  "with error",
-			error: true,
-			attrs: expectedAttrs,
-		},
-		{
-			name:         "no parent span",
-			noParentSpan: true,
-			attrs:        expectedAttrs,
-		},
-		{
-			name:             "with attribute getter",
-			attributesGetter: getDummyAttributesGetter(),
-			attrs:            expectedAttrs,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			// Prepare traces
-			ctx, sr, tracer, dummySpan := prepareTraces(tc.noParentSpan)
-
-			// New conn
-			cfg := newMockConfig(t, tracer)
-			cfg.SpanOptions.DisableQuery = tc.disableQuery
-			cfg.AttributesGetter = tc.attributesGetter
-			mc := newMockConn(tc.error)
-			otelConn := newConn(mc, cfg)
-
-			_, err := otelConn.ExecContext(ctx, query, args)
-			if tc.error {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
+	for _, omitConnExec := range []bool{true, false} {
+		var testname string
+		if omitConnExec {
+			testname = "OmitConnExec"
+		}
+		t.Run(testname, func(t *testing.T) {
+			testCases := []struct {
+				name             string
+				error            bool
+				noParentSpan     bool
+				disableQuery     bool
+				attrs            []attribute.KeyValue
+				attributesGetter AttributesGetter
+			}{
+				{
+					name:  "no error",
+					attrs: expectedAttrs,
+				},
+				{
+					name:         "no query db.statement",
+					disableQuery: true,
+				},
+				{
+					name:  "with error",
+					error: true,
+					attrs: expectedAttrs,
+				},
+				{
+					name:         "no parent span",
+					noParentSpan: true,
+					attrs:        expectedAttrs,
+				},
+				{
+					name:             "with attribute getter",
+					attributesGetter: getDummyAttributesGetter(),
+					attrs:            expectedAttrs,
+				},
 			}
 
-			spanList := sr.Ended()
-			expectedSpanCount := getExpectedSpanCount(tc.noParentSpan, false)
-			// One dummy span and one span created in ExecContext
-			require.Equal(t, expectedSpanCount, len(spanList))
+			for _, tc := range testCases {
+				t.Run(tc.name, func(t *testing.T) {
+					// Prepare traces
+					ctx, sr, tracer, dummySpan := prepareTraces(tc.noParentSpan)
 
-			assertSpanList(t, spanList, spanAssertionParameter{
-				parentSpan:         dummySpan,
-				error:              tc.error,
-				expectedAttributes: append(cfg.Attributes, tc.attrs...),
-				method:             MethodConnExec,
-				noParentSpan:       tc.noParentSpan,
-				ctx:                mc.execContextCtx,
-				attributesGetter:   tc.attributesGetter,
-				query:              query,
-				args:               args,
-			})
+					// New conn
+					cfg := newMockConfig(t, tracer)
+					cfg.SpanOptions.DisableQuery = tc.disableQuery
+					cfg.AttributesGetter = tc.attributesGetter
+					cfg.SpanOptions.OmitConnExec = omitConnExec
+					mc := newMockConn(tc.error)
+					otelConn := newConn(mc, cfg)
 
-			assert.Equal(t, 1, mc.execContextCount)
-			assert.Equal(t, "query", mc.execContextQuery)
+					_, err := otelConn.ExecContext(ctx, query, args)
+					if tc.error {
+						require.Error(t, err)
+					} else {
+						require.NoError(t, err)
+					}
+
+					spanList := sr.Ended()
+					expectedSpanCount := getExpectedSpanCount(tc.noParentSpan, omitConnExec)
+					// One dummy span and one span created in ExecContext
+					require.Equal(t, expectedSpanCount, len(spanList))
+
+					assertSpanList(t, spanList, spanAssertionParameter{
+						parentSpan:         dummySpan,
+						error:              tc.error,
+						expectedAttributes: append(cfg.Attributes, tc.attrs...),
+						method:             MethodConnExec,
+						noParentSpan:       tc.noParentSpan,
+						ctx:                mc.execContextCtx,
+						attributesGetter:   tc.attributesGetter,
+						omitSpan:           omitConnExec,
+						query:              query,
+						args:               args,
+					})
+
+					assert.Equal(t, 1, mc.execContextCount)
+					assert.Equal(t, "query", mc.execContextQuery)
+				})
+			}
 		})
 	}
+
 }
 
 func TestOtConn_QueryContext(t *testing.T) {
