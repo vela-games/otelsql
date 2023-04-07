@@ -8,6 +8,34 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- Avoid returning `ErrSkip` when not permitted by sql/driver (#153)
+- Upgrade all `semconv` packages to use `v1.18.0`. (#156)
+
+## [0.20.0] - 2023-03-02
+
+### Changed
+
+- Upgrade OTel to version `1.14.0/0.37.0`. (#150)
+
+## [0.19.0] - 2023-02-13
+
+### Added
+
+- Go 1.20 to supported versions. (#146)
+
+### Changed
+
+- Upgrade OTel to version `1.13.0/0.36.0`. (#145)
+
+## [0.18.0] - 2023-02-01
+
+### Changed
+
+- Upgrade OTel to version `1.12.0/0.35.0`. (#139)
+- Upgrade all `semconv` packages to use `v1.17.0`. (#141)
+
 ## [0.17.1] - 2022-12-13
 
 ### Changed
@@ -207,7 +235,10 @@ It contains instrumentation for trace and depends on OTel `v0.18.0`.
 - Example code for a basic usage.
 - Apache-2.0 license.
 
-[Unreleased]: https://github.com/XSAM/otelsql/compare/v0.17.1...HEAD
+[Unreleased]: https://github.com/XSAM/otelsql/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/XSAM/otelsql/releases/tag/v0.20.0
+[0.19.0]: https://github.com/XSAM/otelsql/releases/tag/v0.19.0
+[0.18.0]: https://github.com/XSAM/otelsql/releases/tag/v0.18.0
 [0.17.1]: https://github.com/XSAM/otelsql/releases/tag/v0.17.1
 [0.17.0]: https://github.com/XSAM/otelsql/releases/tag/v0.17.0
 [0.16.0]: https://github.com/XSAM/otelsql/releases/tag/v0.16.0
